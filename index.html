@@ -3,280 +3,456 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control de Obra & Finanzas</title>
+    <title>Sistema Integral de Obra</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
-        .tab-active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: bold; }
+        .tab-active { border-bottom: 3px solid #2563eb; color: #2563eb; font-weight: bold; background-color: #eff6ff; }
         .hidden-section { display: none; }
+        .excel-input { width: 100%; background: transparent; border: none; outline: none; padding: 4px; font-size: 0.9em; }
+        .excel-cell { border: 1px solid #d1d5db; padding: 0; min-width: 80px; }
+        .readonly-cell { background-color: #f1f5f9; color: #475569; text-align: right; }
+        
+        /* Estilos Impresión */
+        @media print {
+            body { background-color: white; }
+            nav, header, .no-print { display: none !important; }
+            .hidden-section { display: none !important; }
+            #reportes { display: block !important; }
+        }
+        
+        /* Estilos Tarjetas Comparativas */
+        .quote-card { transition: all 0.3s; border: 2px solid transparent; }
+        .quote-selected { border-color: #22c55e; background-color: #f0fdf4; transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     </style>
 </head>
 <body class="text-gray-800">
 
-    <div class="max-w-md mx-auto bg-white min-h-screen shadow-lg relative pb-20">
+    <div class="max-w-7xl mx-auto bg-white min-h-screen shadow-2xl relative pb-20">
         
-        <header class="bg-blue-700 text-white p-6 rounded-b-3xl shadow-md">
-            <h1 class="text-2xl font-bold">Control de Obra</h1>
-            <p class="text-blue-200 text-sm">Gestión de recursos financieros</p>
-            
-            <div class="mt-6 flex justify-between items-end">
-                <div>
-                    <p class="text-xs text-blue-200 uppercase">Presupuesto Restante</p>
-                    <p class="text-3xl font-bold" id="displayRestante">$0.00</p>
-                </div>
-                <div class="text-right">
-                    <p class="text-xs text-blue-200">Gastado</p>
-                    <p class="text-lg font-semibold" id="displayGastado">$0.00</p>
-                </div>
+        <header class="bg-slate-900 text-white p-6 shadow-md flex flex-wrap justify-between items-center no-print">
+            <div>
+                <h1 class="text-2xl font-bold tracking-wider">CONTROL DE OBRA PRO</h1>
+                <p class="text-slate-400 text-sm">Finanzas • Estimaciones • Bitácora • Materiales</p>
             </div>
-            
-            <div class="w-full bg-blue-900 h-2 rounded-full mt-2">
-                <div id="progressBar" class="bg-green-400 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+            <div class="text-right mt-4 sm:mt-0">
+                <p class="text-xs text-slate-400 uppercase">Proyecto</p>
+                <input type="text" id="projectName" class="bg-slate-800 text-white border-none text-right font-bold focus:ring-0 rounded px-2" value="Residencia">
             </div>
         </header>
 
-        <nav class="flex justify-around bg-white p-2 shadow-sm sticky top-0 z-10">
-            <button onclick="showSection('dashboard')" id="btn-dashboard" class="tab-active py-2 px-4 w-1/3 text-center">Mi Panel</button>
-            <button onclick="showSection('gastos')" id="btn-gastos" class="py-2 px-4 w-1/3 text-center">Registrar</button>
-            <button onclick="showSection('contratista')" id="btn-contratista" class="py-2 px-4 w-1/3 text-center text-xs">Modo Contratista</button>
+        <nav class="flex overflow-x-auto bg-white border-b sticky top-0 z-20 shadow-sm no-print">
+            <button onclick="showSection('dashboard')" id="btn-dashboard" class="tab-active py-3 px-4 whitespace-nowrap hover:bg-gray-50 transition text-sm">Panel General</button>
+            <button onclick="showSection('materiales')" id="btn-materiales" class="py-3 px-4 whitespace-nowrap hover:bg-gray-50 text-gray-500 font-medium transition text-sm">
+                <i class="fas fa-boxes mr-1"></i> Fondo Materiales
+            </button>
+            <button onclick="showSection('estimaciones')" id="btn-estimaciones" class="py-3 px-4 whitespace-nowrap hover:bg-gray-50 text-gray-500 font-medium transition text-sm">
+                <i class="fas fa-file-invoice-dollar mr-1"></i> Estimaciones
+            </button>
+            <button onclick="showSection('reportes')" id="btn-reportes" class="py-3 px-4 whitespace-nowrap hover:bg-gray-50 text-gray-500 font-medium transition text-sm">
+                <i class="fas fa-hard-hat mr-1"></i> Bitácora (RDO)
+            </button>
+            <button onclick="showSection('gastos')" id="btn-gastos" class="py-3 px-4 whitespace-nowrap hover:bg-gray-50 text-gray-500 font-medium transition text-sm">Gastos Menores</button>
         </nav>
 
-        <section id="dashboard" class="p-4 space-y-4">
-            
-            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 flex justify-between items-center">
-                <div>
-                    <label class="block text-xs text-gray-500">Presupuesto Total</label>
-                    <input type="number" id="budgetInput" class="bg-transparent font-bold text-gray-700 w-32 focus:outline-none border-b border-gray-300" placeholder="0.00">
-                </div>
-                <button onclick="saveBudget()" class="text-blue-600 text-sm font-semibold hover:bg-blue-100 px-3 py-1 rounded">Guardar</button>
-            </div>
-
-            <div class="mt-4">
-                <h3 class="font-bold text-gray-700 mb-2">Historial de Gastos</h3>
-                <div id="expenseList" class="space-y-3 pb-10">
-                    <div class="text-center text-gray-400 text-sm py-8">No hay gastos registrados</div>
-                </div>
-            </div>
-            
-            <button onclick="clearData()" class="text-red-400 text-xs w-full text-center mt-8">Borrar todos los datos (Reiniciar)</button>
-        </section>
-
-        <section id="gastos" class="hidden-section p-4">
-            <h2 class="text-xl font-bold mb-4">Nuevo Gasto</h2>
-            <form id="ownerForm" onsubmit="addExpense(event)" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Concepto / Material</label>
-                    <input type="text" id="desc" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 bg-gray-50 border" placeholder="Ej. Cemento, Varilla...">
+        <section id="dashboard" class="p-6 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-blue-50 p-6 rounded-xl border border-blue-100 shadow-sm">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-blue-800 font-bold">Estado Financiero Global</h3>
+                        <button onclick="saveBudget()" class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Actualizar Presupuesto</button>
+                    </div>
+                    <label class="text-xs text-gray-500 block">Presupuesto Total de la Obra</label>
+                    <input type="number" id="budgetInput" class="text-3xl bg-transparent font-bold text-gray-700 w-full focus:outline-none border-b border-blue-200 mb-2" placeholder="0.00">
+                    
+                    <div class="space-y-2 mt-4 text-sm">
+                        <div class="flex justify-between">
+                            <span>Gastos Menores (Caja Chica):</span>
+                            <span class="font-bold text-gray-600" id="dashMinorExpenses">$0.00</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Materiales (Fondo Proveedores):</span>
+                            <span class="font-bold text-orange-600" id="dashMaterialExpenses">$0.00</span>
+                        </div>
+                        <div class="flex justify-between border-t border-blue-200 pt-2 text-base">
+                            <span class="font-bold">TOTAL GASTADO:</span>
+                            <span class="font-bold text-red-600" id="displayGastado">$0.00</span>
+                        </div>
+                        <div class="flex justify-between text-base">
+                            <span class="font-bold">DISPONIBLE:</span>
+                            <span class="font-bold text-green-600" id="displayRestante">$0.00</span>
+                        </div>
+                    </div>
+                    <div class="w-full bg-blue-200 h-3 rounded-full mt-4 overflow-hidden">
+                        <div id="progressBar" class="bg-blue-600 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
                 </div>
                 
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Proveedor</label>
-                        <input type="text" id="supplier" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 bg-gray-50 border">
+                <div class="bg-orange-50 p-6 rounded-xl border border-orange-100 shadow-sm">
+                    <h3 class="text-orange-800 font-bold mb-4">Estado del Fondo de Materiales</h3>
+                    <p class="text-sm text-gray-600">Dinero entregado al contratista para compras mayores.</p>
+                    <div class="mt-4 text-center">
+                        <p class="text-xs uppercase text-gray-500">Saldo en manos del contratista</p>
+                        <p class="text-4xl font-bold text-orange-600 mt-1" id="dashFundBalance">$0.00</p>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Fecha</label>
-                        <input type="date" id="date" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 bg-gray-50 border">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Cantidad</label>
-                        <input type="number" id="qty" placeholder="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 bg-gray-50 border">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Costo Total ($)</label>
-                        <input type="number" id="cost" required step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 bg-gray-50 border" placeholder="0.00">
+                    <div class="mt-6 text-center">
+                         <button onclick="showSection('materiales')" class="bg-orange-600 text-white px-6 py-2 rounded-full shadow hover:bg-orange-700 text-sm">Gestionar Materiales</button>
                     </div>
                 </div>
-
-                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg shadow-lg hover:bg-blue-700 transition">
-                    <i class="fas fa-plus-circle mr-2"></i> Agregar Gasto
-                </button>
-            </form>
+            </div>
         </section>
 
-        <section id="contratista" class="hidden-section p-4 bg-gray-50 min-h-screen">
-            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-                <p class="text-sm text-yellow-700">
-                    <strong>Instrucciones:</strong> Copia el link de esta página (o envíale el archivo) a tu contratista. Él usará este formulario.
-                </p>
+        <section id="materiales" class="hidden-section p-6 bg-gray-50 min-h-screen">
+            
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8 border-l-4 border-orange-500">
+                <div class="flex justify-between items-center flex-wrap gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">Fondo para Materiales</h2>
+                        <p class="text-sm text-gray-500">Dinero facilitado al contratista (Anticipo Materiales)</p>
+                    </div>
+                    <div class="flex items-center bg-gray-100 rounded-lg p-2">
+                        <span class="text-sm text-gray-600 mr-2">Monto Facilitado: $</span>
+                        <input type="number" id="materialFundInput" class="bg-transparent font-bold text-lg w-32 border-b border-gray-400 focus:outline-none" placeholder="0.00">
+                        <button onclick="updateFund()" class="ml-2 bg-orange-500 text-white px-3 py-1 rounded text-xs hover:bg-orange-600">Actualizar</button>
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <p class="text-sm font-bold text-gray-700">Saldo Disponible para Compras: <span class="text-2xl text-orange-600 ml-2" id="matFundAvailable">$0.00</span></p>
+                </div>
             </div>
 
-            <h2 class="text-xl font-bold mb-4 text-gray-800">Reporte de Contratista</h2>
-            <div class="bg-white p-4 rounded-lg shadow space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-600">Material / Concepto</label>
-                    <input type="text" id="c_desc" class="w-full border p-2 rounded">
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2"><i class="fas fa-balance-scale-right mr-2"></i>Comparativa de Proveedores (Cotizaciones)</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-500 uppercase">Material / Producto</label>
+                        <input type="text" id="matName" class="w-full border p-2 rounded bg-gray-50" placeholder="Ej. Cemento Gris Tolteca">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase">Unidad</label>
+                        <input type="text" id="matUnit" class="w-full border p-2 rounded bg-gray-50" placeholder="Ej. Tonelada">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase">Cantidad</label>
+                        <input type="number" id="matQty" class="w-full border p-2 rounded bg-gray-50" placeholder="0" oninput="calcQuotes()">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-600">Proveedor</label>
-                    <input type="text" id="c_supplier" class="w-full border p-2 rounded">
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="quote-card p-4 rounded bg-gray-50 relative group" id="cardA">
+                        <div class="absolute top-2 right-2 hidden group-hover:block">
+                            <button onclick="selectQuote('A')" class="text-xs bg-gray-200 hover:bg-green-200 px-2 py-1 rounded">Seleccionar</button>
+                        </div>
+                        <h4 class="font-bold text-gray-600 text-center mb-2">Opción A</h4>
+                        <input type="text" id="provA" class="w-full mb-2 text-sm border p-1 rounded" placeholder="Nombre Proveedor A">
+                        <div class="flex items-center">
+                            <span class="text-gray-500 mr-1">$</span>
+                            <input type="number" id="priceA" class="w-full font-bold border p-1 rounded" placeholder="Precio Unitario" oninput="calcQuotes()">
+                        </div>
+                        <p class="text-center mt-2 text-sm font-bold text-gray-400" id="totalA">$0.00</p>
+                    </div>
+
+                    <div class="quote-card p-4 rounded bg-gray-50 relative group" id="cardB">
+                        <div class="absolute top-2 right-2 hidden group-hover:block">
+                            <button onclick="selectQuote('B')" class="text-xs bg-gray-200 hover:bg-green-200 px-2 py-1 rounded">Seleccionar</button>
+                        </div>
+                        <h4 class="font-bold text-gray-600 text-center mb-2">Opción B</h4>
+                        <input type="text" id="provB" class="w-full mb-2 text-sm border p-1 rounded" placeholder="Nombre Proveedor B">
+                        <div class="flex items-center">
+                            <span class="text-gray-500 mr-1">$</span>
+                            <input type="number" id="priceB" class="w-full font-bold border p-1 rounded" placeholder="Precio Unitario" oninput="calcQuotes()">
+                        </div>
+                        <p class="text-center mt-2 text-sm font-bold text-gray-400" id="totalB">$0.00</p>
+                    </div>
+
+                    <div class="quote-card p-4 rounded bg-gray-50 relative group" id="cardC">
+                        <div class="absolute top-2 right-2 hidden group-hover:block">
+                            <button onclick="selectQuote('C')" class="text-xs bg-gray-200 hover:bg-green-200 px-2 py-1 rounded">Seleccionar</button>
+                        </div>
+                        <h4 class="font-bold text-gray-600 text-center mb-2">Opción C</h4>
+                        <input type="text" id="provC" class="w-full mb-2 text-sm border p-1 rounded" placeholder="Nombre Proveedor C">
+                        <div class="flex items-center">
+                            <span class="text-gray-500 mr-1">$</span>
+                            <input type="number" id="priceC" class="w-full font-bold border p-1 rounded" placeholder="Precio Unitario" oninput="calcQuotes()">
+                        </div>
+                        <p class="text-center mt-2 text-sm font-bold text-gray-400" id="totalC">$0.00</p>
+                    </div>
                 </div>
+
+                <div class="mt-6 flex justify-end items-center gap-4 border-t pt-4">
+                    <div class="text-right">
+                        <p class="text-xs text-gray-500">Proveedor Seleccionado:</p>
+                        <p class="font-bold text-lg text-green-600" id="selectedProvText">Ninguno</p>
+                    </div>
+                    <button onclick="registerMaterialPurchase()" class="bg-green-600 text-white px-6 py-3 rounded shadow-lg hover:bg-green-700 font-bold disabled:opacity-50" id="btnBuyMat" disabled>
+                        <i class="fas fa-check-circle mr-2"></i> Registrar Compra
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="bg-slate-800 text-white p-3 font-bold text-sm flex justify-between">
+                    <span>Historial de Compras (Materiales)</span>
+                    <button onclick="exportMaterialList()" class="text-xs bg-slate-600 px-2 rounded hover:bg-slate-500">Copiar Lista</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-100 text-gray-600 border-b">
+                            <tr>
+                                <th class="p-3">Material</th>
+                                <th class="p-3">Proveedor (Ganador)</th>
+                                <th class="p-3 text-center">Cant.</th>
+                                <th class="p-3 text-right">P. Unit</th>
+                                <th class="p-3 text-right">Total</th>
+                                <th class="p-3 text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="materialHistoryBody">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="reportes" class="hidden-section p-4 bg-white min-h-screen">
+            <div class="text-center p-4 bg-yellow-50 border border-yellow-200 mb-4 rounded">
+                <p class="font-bold">Módulo de Bitácora / RDO</p>
+                <p class="text-sm">Utiliza esta sección para generar e imprimir los reportes diarios.</p>
+                <button onclick="alert('Funcionalidad RDO completa disponible en el código previo')" class="mt-2 text-blue-600 underline">Ver opciones de RDO</button>
+            </div>
+        </section>
+
+        <section id="estimaciones" class="hidden-section p-4 bg-white min-h-screen">
+            <h2 class="text-xl font-bold mb-4">Estimaciones</h2>
+             <div class="overflow-x-auto border rounded-lg shadow-sm">
+                <table class="w-full text-sm border-collapse" id="estimationTable">
+                    <thead>
+                        <tr><th class="excel-header">Concepto</th><th class="excel-header">Importe</th></tr>
+                    </thead>
+                    <tbody id="estimationBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="gastos" class="hidden-section p-4 max-w-2xl mx-auto">
+            <h2 class="text-xl font-bold mb-4">Gastos Menores / Caja Chica</h2>
+            <form onsubmit="addExpense(event)" class="space-y-4 bg-white p-6 rounded shadow border">
+                <input type="text" id="desc" required class="w-full border rounded p-2" placeholder="Concepto">
                 <div class="flex gap-2">
-                    <div class="w-1/2">
-                        <label class="block text-sm font-medium text-gray-600">Cantidad</label>
-                        <input type="number" id="c_qty" class="w-full border p-2 rounded">
-                    </div>
-                    <div class="w-1/2">
-                        <label class="block text-sm font-medium text-gray-600">Costo ($)</label>
-                        <input type="number" id="c_cost" class="w-full border p-2 rounded">
-                    </div>
+                    <input type="date" id="date" class="w-1/2 border rounded p-2">
+                    <input type="number" id="cost" required step="0.01" class="w-1/2 border rounded p-2" placeholder="Costo $">
                 </div>
-                
-                <button onclick="generateWhatsApp()" class="w-full bg-green-500 text-white font-bold py-3 rounded-lg shadow hover:bg-green-600 transition flex justify-center items-center">
-                    <i class="fab fa-whatsapp mr-2"></i> Enviar Reporte al Dueño
-                </button>
-            </div>
-            
-            <p class="text-xs text-gray-400 mt-4 text-center">
-                Al hacer clic, se abrirá WhatsApp con los datos listos para enviar al dueño de la obra.
-            </p>
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 rounded">Registrar</button>
+            </form>
+            <div id="expenseList" class="mt-6 space-y-2"></div>
         </section>
 
     </div>
 
     <script>
-        // Inicialización de datos
-        let expenses = JSON.parse(localStorage.getItem('construction_expenses')) || [];
-        let budget = parseFloat(localStorage.getItem('construction_budget')) || 0;
+        // --- BASE DE DATOS LOCAL ---
+        let db = {
+            budget: parseFloat(localStorage.getItem('db_budget')) || 0,
+            matFund: parseFloat(localStorage.getItem('db_matFund')) || 0, // Total dinero dado al contratista
+            expenses: JSON.parse(localStorage.getItem('db_expenses')) || [], // Gastos menores
+            materials: JSON.parse(localStorage.getItem('db_materials')) || [], // Compras materiales
+            project: localStorage.getItem('db_project') || "Residencia"
+        };
+        
+        let selectedQuoteID = null; // 'A', 'B', o 'C'
 
-        // Cargar datos al inicio
+        // --- INICIALIZACIÓN ---
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('budgetInput').value = budget > 0 ? budget : '';
-            document.getElementById('date').valueAsDate = new Date();
-            updateUI();
+            loadData();
+            updateDashboard();
         });
 
-        // Navegación entre pestañas
-        function showSection(sectionId) {
-            ['dashboard', 'gastos', 'contratista'].forEach(id => {
-                document.getElementById(id).classList.add('hidden-section');
-                document.getElementById(`btn-${id}`).classList.remove('tab-active');
-                document.getElementById(`btn-${id}`).classList.add('text-gray-500');
+        function loadData() {
+            document.getElementById('budgetInput').value = db.budget;
+            document.getElementById('materialFundInput').value = db.matFund;
+            document.getElementById('projectName').value = db.project;
+            if(document.getElementById('date')) document.getElementById('date').valueAsDate = new Date();
+            renderExpenses();
+            renderMaterialHistory();
+        }
+
+        function showSection(id) {
+            document.querySelectorAll('section').forEach(s => s.classList.add('hidden-section'));
+            document.getElementById(id).classList.remove('hidden-section');
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('tab-active'));
+            document.getElementById('btn-'+id).classList.add('tab-active');
+        }
+
+        // --- LÓGICA MATERIALES (NUEVO) ---
+        function updateFund() {
+            db.matFund = parseFloat(document.getElementById('materialFundInput').value) || 0;
+            localStorage.setItem('db_matFund', db.matFund);
+            updateDashboard();
+            alert("Fondo actualizado");
+        }
+
+        function calcQuotes() {
+            const qty = parseFloat(document.getElementById('matQty').value) || 0;
+            const pA = parseFloat(document.getElementById('priceA').value) || 0;
+            const pB = parseFloat(document.getElementById('priceB').value) || 0;
+            const pC = parseFloat(document.getElementById('priceC').value) || 0;
+
+            document.getElementById('totalA').innerText = fmtMoney(qty * pA);
+            document.getElementById('totalB').innerText = fmtMoney(qty * pB);
+            document.getElementById('totalC').innerText = fmtMoney(qty * pC);
+        }
+
+        function selectQuote(option) {
+            selectedQuoteID = option;
+            
+            // Visual Styles
+            ['A','B','C'].forEach(x => {
+                document.getElementById('card'+x).classList.remove('quote-selected');
             });
-            document.getElementById(sectionId).classList.remove('hidden-section');
-            document.getElementById(`btn-${sectionId}`).classList.add('tab-active');
-            document.getElementById(`btn-${sectionId}`).classList.remove('text-gray-500');
+            document.getElementById('card'+option).classList.add('quote-selected');
+            
+            // Get Provider Name
+            const prov = document.getElementById('prov'+option).value || "Proveedor " + option;
+            document.getElementById('selectedProvText').innerText = prov + " (Opción " + option + ")";
+            document.getElementById('btnBuyMat').disabled = false;
         }
 
-        // Guardar Presupuesto
-        function saveBudget() {
-            const val = parseFloat(document.getElementById('budgetInput').value);
-            if (!isNaN(val)) {
-                budget = val;
-                localStorage.setItem('construction_budget', budget);
-                updateUI();
-                alert('Presupuesto actualizado');
-            }
-        }
+        function registerMaterialPurchase() {
+            if(!selectedQuoteID) return;
 
-        // Agregar Gasto (Dueño)
-        function addExpense(e) {
-            e.preventDefault();
-            const expense = {
+            const qty = parseFloat(document.getElementById('matQty').value) || 0;
+            const unitCost = parseFloat(document.getElementById('price'+selectedQuoteID).value) || 0;
+            const total = qty * unitCost;
+            
+            if(total <= 0) { alert("El costo total debe ser mayor a 0"); return; }
+
+            const purchase = {
                 id: Date.now(),
-                desc: document.getElementById('desc').value,
-                supplier: document.getElementById('supplier').value,
-                date: document.getElementById('date').value,
-                qty: document.getElementById('qty').value || 1,
-                cost: parseFloat(document.getElementById('cost').value)
+                item: document.getElementById('matName').value || 'Material Sin Nombre',
+                unit: document.getElementById('matUnit').value || 'pza',
+                qty: qty,
+                supplier: document.getElementById('prov'+selectedQuoteID).value || ('Prov. ' + selectedQuoteID),
+                unitCost: unitCost,
+                totalCost: total,
+                date: new Date().toLocaleDateString()
             };
 
-            expenses.unshift(expense); // Agregar al inicio
-            localStorage.setItem('construction_expenses', JSON.stringify(expenses));
+            db.materials.unshift(purchase);
+            localStorage.setItem('db_materials', JSON.stringify(db.materials));
             
-            // Reset form
-            document.getElementById('ownerForm').reset();
-            document.getElementById('date').valueAsDate = new Date();
-            
-            alert('Gasto registrado correctamente');
-            showSection('dashboard');
-            updateUI();
+            // Limpiar formulario
+            document.getElementById('matName').value = '';
+            document.getElementById('matQty').value = '';
+            ['A','B','C'].forEach(x => {
+                document.getElementById('prov'+x).value = '';
+                document.getElementById('price'+x).value = '';
+                document.getElementById('card'+x).classList.remove('quote-selected');
+                document.getElementById('total'+x).innerText = '$0.00';
+            });
+            document.getElementById('selectedProvText').innerText = "Ninguno";
+            document.getElementById('btnBuyMat').disabled = true;
+            selectedQuoteID = null;
+
+            renderMaterialHistory();
+            updateDashboard();
+            alert("Compra registrada y descontada del fondo.");
         }
 
-        // Eliminar Gasto
-        function deleteExpense(id) {
-            if(confirm('¿Borrar este gasto?')) {
-                expenses = expenses.filter(e => e.id !== id);
-                localStorage.setItem('construction_expenses', JSON.stringify(expenses));
-                updateUI();
-            }
-        }
-
-        // Actualizar UI (Cálculos y Lista)
-        function updateUI() {
-            const totalSpent = expenses.reduce((sum, item) => sum + item.cost, 0);
-            const remaining = budget - totalSpent;
-
-            // Formatear moneda
-            const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
-
-            document.getElementById('displayGastado').textContent = fmt.format(totalSpent);
-            document.getElementById('displayRestante').textContent = fmt.format(remaining);
-
-            // Barra de progreso
-            let percent = budget > 0 ? (totalSpent / budget) * 100 : 0;
-            const bar = document.getElementById('progressBar');
-            bar.style.width = `${Math.min(percent, 100)}%`;
-            
-            if(percent > 90) bar.className = "h-2 rounded-full transition-all duration-500 bg-red-500";
-            else if(percent > 70) bar.className = "h-2 rounded-full transition-all duration-500 bg-yellow-400";
-            else bar.className = "h-2 rounded-full transition-all duration-500 bg-green-400";
-
-            // Renderizar lista
-            const list = document.getElementById('expenseList');
-            list.innerHTML = '';
-            
-            if (expenses.length === 0) {
-                list.innerHTML = '<div class="text-center text-gray-400 text-sm py-8">No hay gastos registrados</div>';
-                return;
-            }
-
-            expenses.forEach(exp => {
-                const item = document.createElement('div');
-                item.className = 'bg-white p-3 rounded-lg shadow-sm border-l-4 border-blue-500 flex justify-between items-center';
-                item.innerHTML = `
-                    <div>
-                        <p class="font-bold text-gray-800">${exp.desc}</p>
-                        <p class="text-xs text-gray-500">${exp.date} | ${exp.supplier || 'Sin prov.'} (x${exp.qty})</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="font-bold text-gray-700">${fmt.format(exp.cost)}</p>
-                        <button onclick="deleteExpense(${exp.id})" class="text-red-300 hover:text-red-500 text-xs mt-1"><i class="fas fa-trash"></i></button>
-                    </div>
+        function renderMaterialHistory() {
+            const tbody = document.getElementById('materialHistoryBody');
+            tbody.innerHTML = '';
+            db.materials.forEach((m, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b hover:bg-gray-50";
+                tr.innerHTML = `
+                    <td class="p-3 font-medium">${m.item}</td>
+                    <td class="p-3 text-gray-600">${m.supplier}</td>
+                    <td class="p-3 text-center">${m.qty} ${m.unit}</td>
+                    <td class="p-3 text-right text-xs text-gray-500">${fmtMoney(m.unitCost)}</td>
+                    <td class="p-3 text-right font-bold text-gray-800">${fmtMoney(m.totalCost)}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="deleteMaterial(${idx})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
+                    </td>
                 `;
-                list.appendChild(item);
+                tbody.appendChild(tr);
             });
         }
 
-        // Generar Link para Contratista (WhatsApp)
-        function generateWhatsApp() {
-            const desc = document.getElementById('c_desc').value;
-            const supplier = document.getElementById('c_supplier').value;
-            const qty = document.getElementById('c_qty').value;
-            const cost = document.getElementById('c_cost').value;
-
-            if(!desc || !cost) {
-                alert("Por favor llena al menos el material y el costo.");
-                return;
+        function deleteMaterial(idx) {
+            if(confirm("¿Eliminar esta compra de material? El dinero regresará al fondo.")) {
+                db.materials.splice(idx, 1);
+                localStorage.setItem('db_materials', JSON.stringify(db.materials));
+                renderMaterialHistory();
+                updateDashboard();
             }
+        }
 
-            // Crear mensaje
-            const text = `*Reporte de Gasto - Obra*%0A%0A🏗️ *Material:* ${desc}%0A🏢 *Proveedor:* ${supplier}%0A🔢 *Cantidad:* ${qty}%0A💰 *Costo:* $${cost}`;
+        // --- DASHBOARD CENTRAL ---
+        function updateDashboard() {
+            // Cálculos
+            const totalMinor = db.expenses.reduce((sum, e) => sum + e.cost, 0);
+            const totalMaterials = db.materials.reduce((sum, m) => sum + m.totalCost, 0);
+            const totalSpent = totalMinor + totalMaterials;
             
-            // Abrir WhatsApp Web o App
-            window.open(`https://wa.me/?text=${text}`, '_blank');
+            const remainingBudget = db.budget - totalSpent;
+            const fundBalance = db.matFund - totalMaterials;
+
+            // UI Text
+            document.getElementById('dashMinorExpenses').innerText = fmtMoney(totalMinor);
+            document.getElementById('dashMaterialExpenses').innerText = fmtMoney(totalMaterials);
+            document.getElementById('displayGastado').innerText = fmtMoney(totalSpent);
+            document.getElementById('displayRestante').innerText = fmtMoney(remainingBudget);
+            
+            // Fondo Específico
+            document.getElementById('dashFundBalance').innerText = fmtMoney(fundBalance);
+            const elAvail = document.getElementById('matFundAvailable');
+            if(elAvail) elAvail.innerText = fmtMoney(fundBalance);
+            if(elAvail && fundBalance < 0) elAvail.className = "text-2xl text-red-600 ml-2 font-bold";
+            else if(elAvail) elAvail.className = "text-2xl text-orange-600 ml-2";
+
+            // Barra Progreso
+            let pct = db.budget > 0 ? (totalSpent / db.budget) * 100 : 0;
+            const bar = document.getElementById('progressBar');
+            bar.style.width = Math.min(pct, 100) + "%";
+            bar.className = pct > 90 ? "bg-red-500 h-3 rounded-full" : "bg-blue-600 h-3 rounded-full";
         }
 
-        function clearData() {
-            if(confirm("¿Estás seguro de borrar TODO el historial y presupuesto? Esta acción no se puede deshacer.")) {
-                localStorage.clear();
-                location.reload();
-            }
+        // --- UTILIDADES ---
+        function saveBudget() {
+            db.budget = parseFloat(document.getElementById('budgetInput').value) || 0;
+            localStorage.setItem('db_budget', db.budget);
+            updateDashboard();
+            alert("Presupuesto guardado");
         }
+
+        // Gastos Menores (Legacy)
+        function addExpense(e) {
+            e.preventDefault();
+            const exp = {
+                id: Date.now(),
+                desc: document.getElementById('desc').value,
+                date: document.getElementById('date').value,
+                cost: parseFloat(document.getElementById('cost').value) || 0
+            };
+            db.expenses.unshift(exp);
+            localStorage.setItem('db_expenses', JSON.stringify(db.expenses));
+            document.getElementById('desc').value = '';
+            document.getElementById('cost').value = '';
+            renderExpenses();
+            updateDashboard();
+        }
+        function renderExpenses() {
+            const list = document.getElementById('expenseList');
+            if(!list) return;
+            list.innerHTML = '';
+            db.expenses.forEach(e => {
+                list.innerHTML += `<div class="flex justify-between border-b py-2 text-sm"><span>${e.desc}</span><span class="font-bold">${fmtMoney(e.cost)}</span></div>`;
+            });
+        }
+
+        function fmtMoney(n) { return new Intl.NumberFormat('es-MX', {style:'currency', currency:'MXN'}).format(n); }
     </script>
 </body>
 </html>
