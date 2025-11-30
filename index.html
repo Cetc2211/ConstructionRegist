@@ -3,323 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control de Obra & Estimaciones</title>
+    <title>Control de Obra & Finanzas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
-        .tab-active { border-bottom: 3px solid #2563eb; color: #2563eb; font-weight: bold; }
+        .tab-active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: bold; }
         .hidden-section { display: none; }
-        /* Estilos para la tabla tipo Excel */
-        .excel-input { width: 100%; background: transparent; border: none; outline: none; padding: 4px; font-size: 0.9em; }
-        .excel-input:focus { background-color: #e0f2fe; }
-        .excel-cell { border: 1px solid #d1d5db; padding: 0; min-width: 80px; }
-        .excel-header { background-color: #f8fafc; border: 1px solid #94a3b8; font-size: 0.75rem; font-weight: bold; text-align: center; padding: 8px 4px; color: #475569; }
-        .readonly-cell { background-color: #f1f5f9; color: #475569; text-align: right; }
     </style>
 </head>
 <body class="text-gray-800">
 
-    <div class="max-w-6xl mx-auto bg-white min-h-screen shadow-2xl relative pb-20">
+    <div class="max-w-md mx-auto bg-white min-h-screen shadow-lg relative pb-20">
         
-        <header class="bg-slate-800 text-white p-6 shadow-md flex flex-wrap justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-bold tracking-wider">CONTROL DE OBRA</h1>
-                <p class="text-slate-400 text-sm">Gestión Financiera y Estimaciones</p>
-            </div>
-            <div class="text-right mt-4 sm:mt-0">
-                <p class="text-xs text-slate-400 uppercase">Total Ejecutado (Acumulado)</p>
-                <p class="text-2xl font-bold text-green-400" id="headerTotalEjecutado">$0.00</p>
-            </div>
-        </header>
-
-        <nav class="flex overflow-x-auto bg-white border-b sticky top-0 z-20 shadow-sm">
-            <button onclick="showSection('dashboard')" id="btn-dashboard" class="tab-active py-3 px-6 whitespace-nowrap hover:bg-gray-50">Mi Panel</button>
-            <button onclick="showSection('estimaciones')" id="btn-estimaciones" class="py-3 px-6 whitespace-nowrap hover:bg-gray-50 text-gray-500 font-medium">
-                <i class="fas fa-table mr-1"></i> Estimaciones (Excel)
-            </button>
-            <button onclick="showSection('gastos')" id="btn-gastos" class="py-3 px-6 whitespace-nowrap hover:bg-gray-50 text-gray-500 font-medium">Registrar Gastos</button>
-            <button onclick="showSection('contratista')" id="btn-contratista" class="py-3 px-6 whitespace-nowrap hover:bg-gray-50 text-gray-500 font-medium text-sm">Modo Contratista</button>
-        </nav>
-
-        <section id="dashboard" class="p-6 space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-blue-50 p-6 rounded-xl border border-blue-100 shadow-sm">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-blue-800 font-bold">Control de Flujo (Caja)</h3>
-                        <button onclick="saveBudget()" class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Actualizar</button>
-                    </div>
-                    <label class="text-xs text-gray-500 block">Presupuesto Inicial</label>
-                    <input type="number" id="budgetInput" class="text-2xl bg-transparent font-bold text-gray-700 w-full focus:outline-none border-b border-blue-200 mb-2" placeholder="0.00">
-                    
-                    <div class="flex justify-between mt-4 text-sm">
-                        <span>Gastado (Facturas/Notas):</span>
-                        <span class="font-bold text-red-500" id="displayGastado">$0.00</span>
-                    </div>
-                    <div class="flex justify-between text-sm mt-1">
-                        <span>Disponible:</span>
-                        <span class="font-bold text-green-600" id="displayRestante">$0.00</span>
-                    </div>
-                    <div class="w-full bg-blue-200 h-2 rounded-full mt-3 overflow-hidden">
-                        <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
-                    </div>
+        <header class="bg-blue-700 text-white p-6 rounded-b-3xl shadow-md">
+            <h1 class="text-2xl font-bold">Control de Obra</h1>
+            <p class="text-blue-200 text-sm">Gestión de recursos financieros</p>
+            
+            <div class="mt-6 flex justify-between items-end">
+                <div>
+                    <p class="text-xs text-blue-200 uppercase">Presupuesto Restante</p>
+                    <p class="text-3xl font-bold" id="displayRestante">$0.00</p>
                 </div>
-
-                <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-                    <h3 class="text-gray-700 font-bold mb-4">Últimos Gastos Registrados</h3>
-                    <div id="expenseListDashboard" class="space-y-2 text-sm max-h-40 overflow-y-auto">
-                        <div class="text-gray-400 italic">Sin movimientos recientes</div>
-                    </div>
+                <div class="text-right">
+                    <p class="text-xs text-blue-200">Gastado</p>
+                    <p class="text-lg font-semibold" id="displayGastado">$0.00</p>
                 </div>
             </div>
             
-            <div class="text-center mt-10">
-                 <button onclick="clearData()" class="text-red-400 text-xs hover:text-red-600 underline">⚠ Reiniciar todo el sistema</button>
+            <div class="w-full bg-blue-900 h-2 rounded-full mt-2">
+                <div id="progressBar" class="bg-green-400 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
             </div>
-        </section>
+        </header>
 
-        <section id="estimaciones" class="hidden-section p-4 bg-white min-h-screen">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-800">Generador de Estimación</h2>
-                <div class="space-x-2">
-                    <button onclick="addNewRow()" class="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 text-sm">
-                        <i class="fas fa-plus"></i> Agregar Partida
-                    </button>
-                    <button onclick="printEstimation()" class="bg-gray-700 text-white px-4 py-2 rounded shadow hover:bg-gray-800 text-sm">
-                        <i class="fas fa-print"></i> Imprimir
-                    </button>
-                </div>
-            </div>
+        <nav class="flex justify-around bg-white p-2 shadow-sm sticky top-0 z-10">
+            <button onclick="showSection('dashboard')" id="btn-dashboard" class="tab-active py-2 px-4 w-1/3 text-center">Mi Panel</button>
+            <button onclick="showSection('gastos')" id="btn-gastos" class="py-2 px-4 w-1/3 text-center">Registrar</button>
+            <button onclick="showSection('contratista')" id="btn-contratista" class="py-2 px-4 w-1/3 text-center text-xs">Modo Contratista</button>
+        </nav>
 
-            <div class="overflow-x-auto border rounded-lg shadow-sm">
-                <table class="w-full text-sm border-collapse" id="estimationTable">
-                    <thead>
-                        <tr>
-                            <th class="excel-header w-10">No.</th> <th class="excel-header min-w-[200px]">Partida / Concepto</th> <th class="excel-header w-16">Unidad</th> <th class="excel-header w-20">Cantidad</th> <th class="excel-header w-24">P. Unitario ($)</th> <th class="excel-header w-24 bg-gray-100">Importe ($)</th> <th class="excel-header w-20 text-blue-700">% Avance</th> <th class="excel-header w-24 bg-blue-50">Imp. Ejecutado</th> <th class="excel-header w-24 bg-red-50">Diferencia</th> <th class="excel-header w-8"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="estimationBody">
-                        </tbody>
-                </table>
-            </div>
-
-            <div class="mt-6 flex justify-end">
-                <div class="w-full md:w-1/3 bg-gray-50 p-4 rounded border border-gray-200 space-y-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-600 text-sm">Total Contrato:</span>
-                        <span class="font-bold text-gray-800" id="estTotalContrato">$0.00</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-blue-700 font-medium text-sm">Total ejecutado a la fecha:</span>
-                        <span class="font-bold text-blue-700" id="estTotalEjecutado">$0.00</span>
-                    </div>
-                    <div class="flex justify-between items-center border-b pb-2">
-                        <span class="text-gray-500 text-sm">Saldo por ejecutar:</span>
-                        <span class="font-medium text-gray-600" id="estSaldo">$0.00</span>
-                    </div>
-                    
-                    <div class="flex justify-between items-center pt-2 text-sm text-red-600">
-                        <span>Retención (10%):</span>
-                        <span id="estRetencion">-$0.00</span>
-                    </div>
-                    
-                    <div class="flex justify-between items-center bg-blue-600 text-white p-3 rounded mt-2 shadow-lg">
-                        <span class="font-bold uppercase text-sm">Importe a pagar esta estimación:</span>
-                        <span class="font-bold text-xl" id="estPagar">$0.00</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="gastos" class="hidden-section p-4 max-w-2xl mx-auto">
-            <h2 class="text-xl font-bold mb-4">Registro de Compras / Gastos</h2>
-            <form id="ownerForm" onsubmit="addExpense(event)" class="space-y-4 bg-white p-6 rounded shadow border">
+        <section id="dashboard" class="p-4 space-y-4">
+            
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 flex justify-between items-center">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Concepto</label>
-                    <input type="text" id="desc" required class="w-full border rounded p-2" placeholder="Ej. 10 bultos de cemento">
+                    <label class="block text-xs text-gray-500">Presupuesto Total</label>
+                    <input type="number" id="budgetInput" class="bg-transparent font-bold text-gray-700 w-32 focus:outline-none border-b border-gray-300" placeholder="0.00">
+                </div>
+                <button onclick="saveBudget()" class="text-blue-600 text-sm font-semibold hover:bg-blue-100 px-3 py-1 rounded">Guardar</button>
+            </div>
+
+            <div class="mt-4">
+                <h3 class="font-bold text-gray-700 mb-2">Historial de Gastos</h3>
+                <div id="expenseList" class="space-y-3 pb-10">
+                    <div class="text-center text-gray-400 text-sm py-8">No hay gastos registrados</div>
+                </div>
+            </div>
+            
+            <button onclick="clearData()" class="text-red-400 text-xs w-full text-center mt-8">Borrar todos los datos (Reiniciar)</button>
+        </section>
+
+        <section id="gastos" class="hidden-section p-4">
+            <h2 class="text-xl font-bold mb-4">Nuevo Gasto</h2>
+            <form id="ownerForm" onsubmit="addExpense(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Concepto / Material</label>
+                    <input type="text" id="desc" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 bg-gray-50 border" placeholder="Ej. Cemento, Varilla...">
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Proveedor</label>
-                        <input type="text" id="supplier" class="w-full border rounded p-2">
+                        <input type="text" id="supplier" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 bg-gray-50 border">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Fecha</label>
-                        <input type="date" id="date" required class="w-full border rounded p-2">
+                        <input type="date" id="date" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 bg-gray-50 border">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Cantidad</label>
-                        <input type="number" id="qty" placeholder="1" class="w-full border rounded p-2">
+                        <input type="number" id="qty" placeholder="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 bg-gray-50 border">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Costo Total ($)</label>
-                        <input type="number" id="cost" required step="0.01" class="w-full border rounded p-2" placeholder="0.00">
+                        <input type="number" id="cost" required step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 bg-gray-50 border" placeholder="0.00">
                     </div>
                 </div>
 
-                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700 transition">
-                    Agregar Gasto
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg shadow-lg hover:bg-blue-700 transition">
+                    <i class="fas fa-plus-circle mr-2"></i> Agregar Gasto
                 </button>
             </form>
-
-            <div class="mt-8">
-                <h3 class="font-bold text-gray-700 border-b pb-2 mb-4">Historial Detallado</h3>
-                <div id="expenseList" class="space-y-3 pb-10"></div>
-            </div>
         </section>
 
         <section id="contratista" class="hidden-section p-4 bg-gray-50 min-h-screen">
-            <div class="max-w-md mx-auto">
-                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4 text-sm text-yellow-800">
-                    Para reporte rápido de gastos menores. Para estimaciones, usa la pestaña "Estimaciones".
-                </div>
-                <div class="bg-white p-6 rounded-lg shadow space-y-4">
-                    <h2 class="text-lg font-bold text-gray-800">Reporte Rápido (WhatsApp)</h2>
-                    <input type="text" id="c_desc" class="w-full border p-2 rounded" placeholder="Material / Concepto">
-                    <input type="text" id="c_supplier" class="w-full border p-2 rounded" placeholder="Proveedor">
-                    <div class="flex gap-2">
-                        <input type="number" id="c_qty" class="w-1/2 border p-2 rounded" placeholder="Cant.">
-                        <input type="number" id="c_cost" class="w-1/2 border p-2 rounded" placeholder="Costo $">
-                    </div>
-                    <button onclick="generateWhatsApp()" class="w-full bg-green-500 text-white font-bold py-3 rounded hover:bg-green-600 transition flex justify-center items-center">
-                        <i class="fab fa-whatsapp mr-2"></i> Enviar a Dueño
-                    </button>
-                </div>
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                <p class="text-sm text-yellow-700">
+                    <strong>Instrucciones:</strong> Copia el link de esta página (o envíale el archivo) a tu contratista. Él usará este formulario.
+                </p>
             </div>
+
+            <h2 class="text-xl font-bold mb-4 text-gray-800">Reporte de Contratista</h2>
+            <div class="bg-white p-4 rounded-lg shadow space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-600">Material / Concepto</label>
+                    <input type="text" id="c_desc" class="w-full border p-2 rounded">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600">Proveedor</label>
+                    <input type="text" id="c_supplier" class="w-full border p-2 rounded">
+                </div>
+                <div class="flex gap-2">
+                    <div class="w-1/2">
+                        <label class="block text-sm font-medium text-gray-600">Cantidad</label>
+                        <input type="number" id="c_qty" class="w-full border p-2 rounded">
+                    </div>
+                    <div class="w-1/2">
+                        <label class="block text-sm font-medium text-gray-600">Costo ($)</label>
+                        <input type="number" id="c_cost" class="w-full border p-2 rounded">
+                    </div>
+                </div>
+                
+                <button onclick="generateWhatsApp()" class="w-full bg-green-500 text-white font-bold py-3 rounded-lg shadow hover:bg-green-600 transition flex justify-center items-center">
+                    <i class="fab fa-whatsapp mr-2"></i> Enviar Reporte al Dueño
+                </button>
+            </div>
+            
+            <p class="text-xs text-gray-400 mt-4 text-center">
+                Al hacer clic, se abrirá WhatsApp con los datos listos para enviar al dueño de la obra.
+            </p>
         </section>
 
     </div>
 
     <script>
-        // --- GESTIÓN DE DATOS ---
-        let expenses = JSON.parse(localStorage.getItem('const_expenses')) || [];
-        let budget = parseFloat(localStorage.getItem('const_budget')) || 0;
-        let estimateRows = JSON.parse(localStorage.getItem('const_estimates')) || [
-            { id: 1, concepto: "Limpieza y Trazo", unidad: "m2", cantidad: 100, precio: 50, avance: 0 },
-            { id: 2, concepto: "Excavación", unidad: "m3", cantidad: 20, precio: 350, avance: 0 }
-        ];
+        // Inicialización de datos
+        let expenses = JSON.parse(localStorage.getItem('construction_expenses')) || [];
+        let budget = parseFloat(localStorage.getItem('construction_budget')) || 0;
 
+        // Cargar datos al inicio
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('budgetInput').value = budget > 0 ? budget : '';
-            if(document.getElementById('date')) document.getElementById('date').valueAsDate = new Date();
-            renderEstimations();
-            updateDashboard();
+            document.getElementById('date').valueAsDate = new Date();
+            updateUI();
         });
 
-        // --- NAVEGACIÓN ---
+        // Navegación entre pestañas
         function showSection(sectionId) {
-            ['dashboard', 'estimaciones', 'gastos', 'contratista'].forEach(id => {
+            ['dashboard', 'gastos', 'contratista'].forEach(id => {
                 document.getElementById(id).classList.add('hidden-section');
-                let btn = document.getElementById(`btn-${id}`);
-                btn.classList.remove('tab-active', 'text-blue-600');
-                btn.classList.add('text-gray-500');
+                document.getElementById(`btn-${id}`).classList.remove('tab-active');
+                document.getElementById(`btn-${id}`).classList.add('text-gray-500');
             });
             document.getElementById(sectionId).classList.remove('hidden-section');
-            let activeBtn = document.getElementById(`btn-${sectionId}`);
-            activeBtn.classList.add('tab-active');
-            activeBtn.classList.remove('text-gray-500');
+            document.getElementById(`btn-${sectionId}`).classList.add('tab-active');
+            document.getElementById(`btn-${sectionId}`).classList.remove('text-gray-500');
         }
 
-        // --- LÓGICA ESTIMACIONES (TABLA EXCEL) ---
-        function renderEstimations() {
-            const tbody = document.getElementById('estimationBody');
-            tbody.innerHTML = '';
-            
-            let totalContrato = 0;
-            let totalEjecutado = 0;
-            let totalSaldo = 0;
-
-            estimateRows.forEach((row, index) => {
-                // Cálculos por fila
-                const importe = row.cantidad * row.precio;
-                const impEjecutado = importe * (row.avance / 100);
-                const diferencia = importe - impEjecutado;
-
-                // Sumas totales
-                totalContrato += importe;
-                totalEjecutado += impEjecutado;
-                totalSaldo += diferencia;
-
-                const tr = document.createElement('tr');
-                tr.className = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
-                
-                tr.innerHTML = `
-                    <td class="excel-cell text-center text-gray-500">${index + 1}</td>
-                    <td class="excel-cell"><input onchange="updateRow(${index}, 'concepto', this.value)" value="${row.concepto}" class="excel-input font-medium"></td>
-                    <td class="excel-cell"><input onchange="updateRow(${index}, 'unidad', this.value)" value="${row.unidad}" class="excel-input text-center"></td>
-                    <td class="excel-cell"><input type="number" onchange="updateRow(${index}, 'cantidad', this.value)" value="${row.cantidad}" class="excel-input text-center"></td>
-                    <td class="excel-cell"><input type="number" onchange="updateRow(${index}, 'precio', this.value)" value="${row.precio}" class="excel-input text-right"></td>
-                    
-                    <td class="excel-cell readonly-cell font-bold pr-2">${formatMoney(importe)}</td>
-                    
-                    <td class="excel-cell border-l-2 border-blue-100">
-                        <input type="number" min="0" max="100" onchange="updateRow(${index}, 'avance', this.value)" value="${row.avance}" class="excel-input text-center text-blue-700 font-bold bg-white">
-                    </td>
-                    
-                    <td class="excel-cell readonly-cell font-bold text-blue-800 pr-2 bg-blue-50">${formatMoney(impEjecutado)}</td>
-                    <td class="excel-cell readonly-cell text-gray-400 pr-2">${formatMoney(diferencia)}</td>
-                    
-                    <td class="excel-cell text-center">
-                        <button onclick="deleteRow(${index})" class="text-red-300 hover:text-red-500"><i class="fas fa-times"></i></button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            // Cálculos Finales
-            const retencion = totalEjecutado * 0.10;
-            const aPagar = totalEjecutado - retencion;
-
-            document.getElementById('estTotalContrato').textContent = formatMoney(totalContrato);
-            document.getElementById('estTotalEjecutado').textContent = formatMoney(totalEjecutado);
-            document.getElementById('headerTotalEjecutado').textContent = formatMoney(totalEjecutado); // Header
-            document.getElementById('estSaldo').textContent = formatMoney(totalSaldo);
-            document.getElementById('estRetencion').textContent = "-" + formatMoney(retencion);
-            document.getElementById('estPagar').textContent = formatMoney(aPagar);
-        }
-
-        function addNewRow() {
-            estimateRows.push({ concepto: "", unidad: "", cantidad: 0, precio: 0, avance: 0 });
-            saveEstimates();
-            renderEstimations();
-        }
-
-        function updateRow(index, field, value) {
-            if (field === 'cantidad' || field === 'precio' || field === 'avance') {
-                value = parseFloat(value) || 0;
-            }
-            estimateRows[index][field] = value;
-            saveEstimates();
-            renderEstimations();
-        }
-
-        function deleteRow(index) {
-            if(confirm('¿Eliminar esta partida?')) {
-                estimateRows.splice(index, 1);
-                saveEstimates();
-                renderEstimations();
-            }
-        }
-
-        function saveEstimates() {
-            localStorage.setItem('const_estimates', JSON.stringify(estimateRows));
-        }
-
-        // --- LÓGICA GASTOS Y DASHBOARD ---
+        // Guardar Presupuesto
         function saveBudget() {
             const val = parseFloat(document.getElementById('budgetInput').value);
             if (!isNaN(val)) {
                 budget = val;
-                localStorage.setItem('const_budget', budget);
-                updateDashboard();
+                localStorage.setItem('construction_budget', budget);
+                updateUI();
                 alert('Presupuesto actualizado');
             }
         }
 
+        // Agregar Gasto (Dueño)
         function addExpense(e) {
             e.preventDefault();
             const expense = {
@@ -330,69 +184,98 @@
                 qty: document.getElementById('qty').value || 1,
                 cost: parseFloat(document.getElementById('cost').value)
             };
-            expenses.unshift(expense);
-            localStorage.setItem('const_expenses', JSON.stringify(expenses));
+
+            expenses.unshift(expense); // Agregar al inicio
+            localStorage.setItem('construction_expenses', JSON.stringify(expenses));
+            
+            // Reset form
             document.getElementById('ownerForm').reset();
             document.getElementById('date').valueAsDate = new Date();
-            alert('Gasto guardado');
-            updateDashboard();
+            
+            alert('Gasto registrado correctamente');
+            showSection('dashboard');
+            updateUI();
         }
 
-        function updateDashboard() {
+        // Eliminar Gasto
+        function deleteExpense(id) {
+            if(confirm('¿Borrar este gasto?')) {
+                expenses = expenses.filter(e => e.id !== id);
+                localStorage.setItem('construction_expenses', JSON.stringify(expenses));
+                updateUI();
+            }
+        }
+
+        // Actualizar UI (Cálculos y Lista)
+        function updateUI() {
             const totalSpent = expenses.reduce((sum, item) => sum + item.cost, 0);
             const remaining = budget - totalSpent;
 
-            document.getElementById('displayGastado').textContent = formatMoney(totalSpent);
-            document.getElementById('displayRestante').textContent = formatMoney(remaining);
+            // Formatear moneda
+            const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
 
-            // Barra progreso presupuesto
+            document.getElementById('displayGastado').textContent = fmt.format(totalSpent);
+            document.getElementById('displayRestante').textContent = fmt.format(remaining);
+
+            // Barra de progreso
             let percent = budget > 0 ? (totalSpent / budget) * 100 : 0;
             const bar = document.getElementById('progressBar');
             bar.style.width = `${Math.min(percent, 100)}%`;
-            bar.className = percent > 90 ? "h-2 rounded-full transition-all duration-500 bg-red-500" : "h-2 rounded-full transition-all duration-500 bg-blue-600";
-
-            // Listas de gastos
-            const listDash = document.getElementById('expenseListDashboard');
-            const listFull = document.getElementById('expenseList');
             
-            let htmlContent = '';
-            if (expenses.length === 0) htmlContent = '<div class="text-center text-gray-400 py-4">Sin datos</div>';
-            else {
-                expenses.forEach(exp => {
-                    htmlContent += `
-                        <div class="bg-white p-3 rounded border-l-4 border-blue-400 shadow-sm flex justify-between items-center mb-2">
-                            <div>
-                                <p class="font-bold text-gray-800 text-sm">${exp.desc}</p>
-                                <p class="text-xs text-gray-500">${exp.date}</p>
-                            </div>
-                            <span class="font-bold text-gray-700">${formatMoney(exp.cost)}</span>
-                        </div>
-                    `;
-                });
+            if(percent > 90) bar.className = "h-2 rounded-full transition-all duration-500 bg-red-500";
+            else if(percent > 70) bar.className = "h-2 rounded-full transition-all duration-500 bg-yellow-400";
+            else bar.className = "h-2 rounded-full transition-all duration-500 bg-green-400";
+
+            // Renderizar lista
+            const list = document.getElementById('expenseList');
+            list.innerHTML = '';
+            
+            if (expenses.length === 0) {
+                list.innerHTML = '<div class="text-center text-gray-400 text-sm py-8">No hay gastos registrados</div>';
+                return;
             }
-            if(listDash) listDash.innerHTML = htmlContent;
-            if(listFull) listFull.innerHTML = htmlContent;
+
+            expenses.forEach(exp => {
+                const item = document.createElement('div');
+                item.className = 'bg-white p-3 rounded-lg shadow-sm border-l-4 border-blue-500 flex justify-between items-center';
+                item.innerHTML = `
+                    <div>
+                        <p class="font-bold text-gray-800">${exp.desc}</p>
+                        <p class="text-xs text-gray-500">${exp.date} | ${exp.supplier || 'Sin prov.'} (x${exp.qty})</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-gray-700">${fmt.format(exp.cost)}</p>
+                        <button onclick="deleteExpense(${exp.id})" class="text-red-300 hover:text-red-500 text-xs mt-1"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
         }
 
+        // Generar Link para Contratista (WhatsApp)
         function generateWhatsApp() {
-            const d = document;
-            const text = `*Reporte Obra*%0AMaterial: ${d.getElementById('c_desc').value}%0AProv: ${d.getElementById('c_supplier').value}%0ACosto: $${d.getElementById('c_cost').value}`;
+            const desc = document.getElementById('c_desc').value;
+            const supplier = document.getElementById('c_supplier').value;
+            const qty = document.getElementById('c_qty').value;
+            const cost = document.getElementById('c_cost').value;
+
+            if(!desc || !cost) {
+                alert("Por favor llena al menos el material y el costo.");
+                return;
+            }
+
+            // Crear mensaje
+            const text = `*Reporte de Gasto - Obra*%0A%0A🏗️ *Material:* ${desc}%0A🏢 *Proveedor:* ${supplier}%0A🔢 *Cantidad:* ${qty}%0A💰 *Costo:* $${cost}`;
+            
+            // Abrir WhatsApp Web o App
             window.open(`https://wa.me/?text=${text}`, '_blank');
         }
 
-        function formatMoney(amount) {
-            return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);
-        }
-
         function clearData() {
-            if(confirm("¿BORRAR TODOS LOS DATOS?")) {
+            if(confirm("¿Estás seguro de borrar TODO el historial y presupuesto? Esta acción no se puede deshacer.")) {
                 localStorage.clear();
                 location.reload();
             }
-        }
-        
-        function printEstimation() {
-            window.print();
         }
     </script>
 </body>
